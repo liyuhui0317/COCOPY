@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>可拷 CoCopy — 帧帧守护 格外可“拷” | 拷卡备份与数据校验</title>
+<meta name="description" content="可拷 CoCopy：为专业影像创作打造的数据安全软件。素材卡同时备份到多个盘，XXH3-128 哈希校验保障素材完整，PDF 拷卡报告存档。macOS · Apple Silicon。Copy with Confidence.">
+<link rel="icon" href="../icons/svg/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFFFFF; --bg2:#F5F7FA;
+  --ink:#1D2B3A; --sub:#5B6B7F; --dim:#8A99AB;
+  --blue:#2E7CF6; --blue-d:#1D5FD8; --green:#00B578; --green2:#00C389;
+  --amber:#F5A623; --red:#E5484D;
+  --grad:linear-gradient(92deg,#2E7CF6 10%,#00C389 90%);
+  --spring:cubic-bezier(.34,1.56,.64,1);
+  --glide:cubic-bezier(.22,1,.36,1);
+  --card-sh:0 2px 10px rgba(23,43,77,.06),0 12px 32px rgba(23,43,77,.07);
+  --cn:'Noto Sans SC','PingFang SC',-apple-system,sans-serif;
+  --en:'Space Grotesk','PingFang SC',sans-serif;
+  --mono:'IBM Plex Mono','SF Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{font-family:var(--cn);background:var(--bg);color:var(--ink);line-height:1.75;font-size:16px;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1120px;margin:0 auto;padding:0 28px}
+h2{font-size:40px;font-weight:900;line-height:1.25;letter-spacing:-.01em}
+h3{font-size:19px;font-weight:700}
+.gt{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+section{padding:96px 0}
+.sec-tag{font-family:var(--en);font-size:13px;letter-spacing:.24em;color:var(--blue);font-weight:600;display:block;margin-bottom:12px}
+.sec-sub{color:var(--sub);font-size:17px;max-width:640px;margin:14px auto 0}
+.center{text-align:center}
+.lk{color:var(--blue-d);text-decoration:none;font-weight:600}
+.lk:hover{text-decoration:underline}
+
+.rv{opacity:0;transform:translateY(34px) scale(.985);transition:opacity .6s cubic-bezier(.25,.1,.25,1),transform .8s var(--glide);transition-delay:var(--d,0s)}
+.rv.in{opacity:1;transform:none}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes prog{0%{width:4%}55%{width:82%}78%{width:88%}100%{width:100%}}
+@keyframes wave{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+@keyframes seqA{0%{stroke-dashoffset:420}7%,72%{stroke-dashoffset:0}84%,100%{stroke-dashoffset:420}}
+@keyframes seqB{0%,7%{stroke-dashoffset:420}15%,72%{stroke-dashoffset:0}84%,100%{stroke-dashoffset:420}}
+@keyframes seqArrowA{0%,5%{opacity:.3;color:#C3D0DC}11%,70%{opacity:1;color:#2E7CF6}84%,100%{opacity:.3;color:#C3D0DC}}
+@keyframes seqArrowB{0%,13%{opacity:.3;color:#C3D0DC}19%,70%{opacity:1;color:#00C389}84%,100%{opacity:.3;color:#C3D0DC}}
+@keyframes seqPop1{0%,7%{transform:scale(1)}12%,72%{transform:scale(1.07)}80%,100%{transform:scale(1)}}
+@keyframes seqPop2{0%,15%{transform:scale(1)}20%,72%{transform:scale(1.07)}80%,100%{transform:scale(1)}}
+@keyframes seqPop3{0%,23%{transform:scale(1)}28%,72%{transform:scale(1.07)}80%,100%{transform:scale(1)}}
+@keyframes seqCap{0%,26%{opacity:0;transform:translateY(10px)}34%,72%{opacity:1;transform:translateY(0)}84%,100%{opacity:0;transform:translateY(10px)}}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .rv{opacity:1!important;transform:none!important}
+  .ckdraw,.ckdraw2{stroke-dashoffset:0!important}
+  .mv-cap{opacity:1!important}
+  html{scroll-behavior:auto}
+}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.72);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid rgba(23,43,77,.08)}
+.nav-in{display:flex;align-items:center;gap:30px;height:60px}
+.nav-brand{display:flex;align-items:center;gap:10px;font-weight:900;color:var(--ink);font-size:17px;text-decoration:none}
+.nav-brand .en{font-family:var(--en);color:var(--blue);font-weight:600;font-size:14px}
+nav a.ln{color:#42526B;text-decoration:none;font-size:13.5px;transition:color .25s}
+nav a.ln:hover{color:#000}
+.nav-cta{margin-left:auto}
+
+.btn{display:inline-flex;align-items:center;gap:10px;border-radius:999px;padding:14px 30px;font-size:15px;font-weight:700;text-decoration:none;border:none;cursor:pointer;transition:transform .35s var(--spring),box-shadow .35s}
+.btn:hover{transform:translateY(-2px) scale(1.02)}
+.btn:active{transform:scale(.97)}
+.btn-grad{background:var(--grad);color:#fff;box-shadow:0 8px 24px rgba(46,124,246,.3)}
+.btn-grad:hover{box-shadow:0 12px 30px rgba(0,195,137,.32)}
+.btn-ghost{border:1.5px solid rgba(46,124,246,.5);color:var(--blue-d);background:#fff}
+.btn-ghost:hover{background:rgba(46,124,246,.06)}
+
+.hero{padding:96px 0 0;text-align:center;position:relative;overflow:hidden;
+  background:radial-gradient(800px 400px at 50% -10%,rgba(46,124,246,.09),transparent 65%),radial-gradient(700px 380px at 82% 12%,rgba(0,195,137,.08),transparent 60%)}
+.hero h1{font-size:64px;font-weight:900;line-height:1.14;letter-spacing:-.015em;margin:26px 0 0}
+.hero .sub{font-size:21px;color:var(--sub);margin-top:20px;font-weight:400}
+.hero .sub b{color:var(--ink);font-weight:700}
+.hero .cta{margin-top:34px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.hero-shot{margin:56px auto 0;max-width:920px;position:relative}
+.hero-shot img{display:block;width:100%;border-radius:24px;box-shadow:0 30px 80px rgba(23,43,77,.16),0 4px 14px rgba(23,43,77,.08)}
+.hero-shot::after{content:"";position:absolute;left:8%;right:8%;bottom:-34px;height:60px;background:radial-gradient(50% 100% at 50% 0%,rgba(46,124,246,.22),transparent 70%);filter:blur(18px);z-index:-1}
+.macbook{max-width:860px;margin:0 auto;position:relative}
+.mb-screen{border:12px solid #10131A;border-bottom-width:14px;border-radius:22px 22px 0 0;background:#10131A;box-shadow:0 30px 70px rgba(23,43,77,.22),0 6px 18px rgba(23,43,77,.12);overflow:hidden;position:relative;z-index:1}
+.mb-screen img{display:block;width:100%}
+.mb-base{height:15px;width:116%;margin-left:-8%;background:linear-gradient(180deg,#F2F3F5 0%,#D4D7DC 70%,#B8BCC3 100%);border-radius:3px 3px 14px 14px;position:relative;box-shadow:0 10px 24px rgba(23,43,77,.18)}
+.mb-base::before{content:"";position:absolute;left:50%;top:0;transform:translateX(-50%);width:120px;height:7px;background:linear-gradient(180deg,#C4C8CE,#DADDE1);border-radius:0 0 8px 8px}
+.report-stage{position:relative;padding:34px;border-radius:30px;background:linear-gradient(145deg,rgba(46,124,246,.10),rgba(0,195,137,.10)),#fff;box-shadow:var(--card-sh)}
+.report-frame{background:#fff;padding:14px;border-radius:18px;box-shadow:0 18px 44px rgba(23,43,77,.14);transform:rotate(-1.5deg);transition:transform .6s var(--spring)}
+.report-stage:hover .report-frame{transform:rotate(0) scale(1.01)}
+.report-frame img{border-radius:10px;width:100%;display:block}
+.glass-chip{position:absolute;display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:16px;background:rgba(255,255,255,.62);backdrop-filter:blur(16px) saturate(170%);-webkit-backdrop-filter:blur(16px) saturate(170%);border:1px solid rgba(255,255,255,.75);box-shadow:0 10px 30px rgba(23,43,77,.14);animation:floaty 6s ease-in-out infinite;z-index:2}
+.glass-chip b{font-size:13px;font-family:var(--mono);color:var(--ink);font-weight:500}
+.gc-1{top:30px;left:-16px}
+.gc-2{bottom:34px;right:-16px;animation-delay:-3s}
+.pillrow{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.pill{font-size:13px;color:var(--sub);border:1px solid rgba(23,43,77,.12);background:#fff;border-radius:99px;padding:7px 18px;transition:transform .35s var(--spring),border-color .3s,color .3s}
+.pill:hover{transform:translateY(-3px);border-color:var(--blue);color:var(--ink)}
+
+.stats-bar{padding:64px 0 8px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.stat{text-align:center;padding:30px 16px;border-radius:20px;background:var(--bg2)}
+.stat b{display:block;font-size:40px;font-weight:900;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-family:var(--en)}
+.stat span{font-size:13.5px;color:var(--sub)}
+
+.alt{background:var(--bg2)}
+
+.feature-block{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;padding:70px 0}
+.feature-block.rev .fb-media{order:2}
+.fb-copy .sec-tag{margin-bottom:14px}
+.fb-copy h2{font-size:36px}
+.fb-copy p{color:var(--sub);font-size:16.5px;margin-top:16px;max-width:480px}
+.fb-copy .lk{display:inline-flex;align-items:center;gap:6px;margin-top:22px;font-size:16px}
+.fb-media{position:relative}
+.fb-media img{display:block;width:100%;border-radius:24px;box-shadow:var(--card-sh)}
+.float-card{position:absolute;bottom:-26px;left:-26px;background:#fff;border-radius:18px;box-shadow:var(--card-sh);padding:18px 22px;border:1px solid rgba(23,43,77,.06);animation:floaty 6.5s ease-in-out infinite;min-width:230px}
+.float-card .fc-t{font-size:12.5px;color:var(--dim)}
+.float-card .fc-v{font-family:var(--mono);font-size:15px;font-weight:500;color:var(--ink);margin-top:4px}
+.float-card .ckrow{display:flex;gap:8px;margin-top:10px}
+.ckchip{font-size:12px;font-weight:700;border-radius:99px;padding:4px 13px}
+.ckchip.b{background:rgba(46,124,246,.1);color:var(--blue-d)}
+.ckchip.g{background:rgba(0,195,137,.12);color:var(--green)}
+.rev .float-card{left:auto;right:-26px}
+
+.moment-visual{margin:56px auto 0;max-width:880px;border-radius:28px;background:#fff;border:1px solid rgba(23,43,77,.07);box-shadow:var(--card-sh);padding:52px 44px}
+.mv-flow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.mv-node{text-align:center;min-width:150px;flex:1}
+.mv-node .lab{font-size:14px;color:var(--sub);margin-top:12px;font-weight:600}
+.mv-node .ok{font-size:12.5px;color:var(--green);font-family:var(--mono);margin-top:2px;min-height:18px}
+.mv-circle{width:96px;height:96px;margin:0 auto;border-radius:50%;border:1.5px solid rgba(23,43,77,.1);display:flex;align-items:center;justify-content:center;background:var(--bg2)}
+.mv-arrow{color:#C3D0DC;font-size:24px;flex:0 0 auto}
+.mv-cap{text-align:center;margin-top:30px;font-family:var(--mono);font-size:15px;color:var(--green);letter-spacing:.05em;font-weight:500;animation:seqCap 7s ease-in-out infinite}
+.ckdraw{stroke-dasharray:420;stroke-dashoffset:420;animation:seqA 7s ease-in-out infinite}
+.ckdraw2{stroke-dasharray:420;stroke-dashoffset:420;animation:seqB 7s ease-in-out infinite}
+.mv-arrow-a{animation:seqArrowA 7s ease-in-out infinite}
+.mv-arrow-b{animation:seqArrowB 7s ease-in-out infinite}
+.c1{animation:seqPop1 7s var(--glide) infinite}
+.c2{animation:seqPop2 7s var(--glide) infinite}
+.c3{animation:seqPop3 7s var(--glide) infinite}
+
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:52px}
+.gcard{background:#fff;border-radius:22px;padding:32px 30px;box-shadow:var(--card-sh);border:1px solid rgba(23,43,77,.05);transition:transform .5s var(--spring),box-shadow .5s}
+.gcard:hover{transform:translateY(-6px);box-shadow:0 6px 16px rgba(23,43,77,.07),0 24px 52px rgba(23,43,77,.12)}
+.gcard .ic{width:50px;height:50px;border-radius:14px;background:var(--grad);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:700;margin-bottom:18px}
+.gcard p{font-size:14px;color:var(--sub);margin-top:8px}
+.gcard .kpi{font-family:var(--mono);font-size:12.5px;color:var(--blue);margin-top:14px}
+.g-visual{margin-top:20px;border-radius:14px;background:var(--bg2);padding:16px;min-height:110px;display:flex;flex-direction:column;justify-content:center;gap:10px;overflow:hidden}
+.prog-line{height:7px;border-radius:99px;background:rgba(23,43,77,.09);overflow:hidden}
+.prog-line i{display:block;height:100%;border-radius:99px;background:var(--grad);animation:prog 4.5s cubic-bezier(.3,.8,.4,1) infinite}
+.hash-big{font-family:var(--mono);font-size:12.5px;color:var(--ink)}
+.seg{display:inline-flex;border:1px solid rgba(23,43,77,.12);border-radius:11px;overflow:hidden;width:max-content;background:#fff}
+.seg span{font-size:12.5px;padding:8px 16px;color:var(--sub)}
+.seg .on{background:var(--grad);color:#fff;font-weight:700}
+.wave{display:flex;align-items:flex-end;gap:5px;height:44px}
+.wave i{width:6px;border-radius:99px;background:var(--grad);height:100%;transform-origin:bottom;animation:wave 1.1s ease-in-out infinite}
+.wave i:nth-child(2){animation-delay:.12s}.wave i:nth-child(3){animation-delay:.24s}.wave i:nth-child(4){animation-delay:.36s}.wave i:nth-child(5){animation-delay:.48s}.wave i:nth-child(6){animation-delay:.6s}.wave i:nth-child(7){animation-delay:.72s}.wave i:nth-child(8){animation-delay:.84s}
+.kbd-hint{font-family:var(--mono);font-size:11px;color:var(--dim)}
+
+.flowline{position:relative;margin-top:64px}
+.flowline::before{content:"";position:absolute;left:6%;right:6%;top:37px;height:2px;background:var(--grad);opacity:.35}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;position:relative}
+.fstep{text-align:center;padding:0 8px}
+.fstep .num{width:74px;height:74px;margin:0 auto;border-radius:50%;background:#fff;border:1.5px solid rgba(23,43,77,.1);box-shadow:var(--card-sh);display:flex;align-items:center;justify-content:center;font-family:var(--en);font-size:19px;font-weight:700;position:relative;z-index:1;transition:transform .5s var(--spring),border-color .4s}
+.fstep:hover .num{transform:scale(1.1);border-color:var(--green2)}
+.fstep h3{margin-top:18px;font-size:16.5px}
+.fstep p{font-size:13.5px;color:var(--sub);margin-top:8px}
+
+.reviews{background:var(--bg2)}
+.rev-viewport{overflow:hidden;margin-top:52px;position:relative}
+.rev-track{display:flex;transition:transform .7s var(--glide)}
+.rev-card{flex:0 0 calc(33.333% - 18px);margin-right:18px;background:#fff;border-radius:24px;padding:36px 32px;box-shadow:var(--card-sh);border:1px solid rgba(23,43,77,.05);display:flex;flex-direction:column}
+.rev-stars{color:#F5A623;font-size:15px;letter-spacing:3px}
+.rev-quote{font-size:16.5px;color:var(--ink);line-height:1.85;margin-top:16px;flex:1}
+.rev-quote::before{content:"“";font-family:Georgia,serif;font-size:34px;color:rgba(46,124,246,.35);display:block;height:6px;margin-bottom:14px}
+.rev-user{display:flex;align-items:center;gap:14px;margin-top:24px}
+.rev-user img{width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid #fff;box-shadow:0 3px 10px rgba(23,43,77,.14)}
+.rev-user b{display:block;font-size:15px}
+.rev-user span{font-size:12.5px;color:var(--dim)}
+.rev-ctl{display:flex;align-items:center;justify-content:center;gap:22px;margin-top:40px}
+.rev-btn{width:46px;height:46px;border-radius:50%;border:1.5px solid rgba(23,43,77,.14);background:#fff;color:var(--ink);font-size:17px;cursor:pointer;transition:transform .35s var(--spring),border-color .3s,color .3s;box-shadow:var(--card-sh)}
+.rev-btn:hover{border-color:var(--blue);color:var(--blue-d);transform:scale(1.08)}
+.rev-btn:active{transform:scale(.94)}
+.rev-dots{display:flex;gap:9px}
+.dot{width:9px;height:9px;border-radius:50%;background:rgba(23,43,77,.16);cursor:pointer;transition:all .35s;border:none;padding:0}
+.dot.on{background:var(--blue);width:26px;border-radius:99px}
+@media (max-width:960px){.rev-card{flex-basis:calc(50% - 18px)}}
+@media (max-width:640px){.rev-card{flex-basis:100%;margin-right:0}}
+
+.spec{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:52px}
+.scard{background:#fff;border-radius:22px;padding:34px;box-shadow:var(--card-sh);border:1px solid rgba(23,43,77,.05)}
+.scard table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:16px}
+.scard td{padding:11px 4px;border-bottom:1px dashed rgba(23,43,77,.1)}
+.scard tr:last-child td{border-bottom:none}
+.scard td:first-child{color:var(--sub);width:40%}
+.scard td:last-child{font-family:var(--mono);color:var(--ink)}
+
+.dl{text-align:center;background:
+  radial-gradient(760px 400px at 18% 110%,rgba(0,195,137,.1),transparent 62%),
+  radial-gradient(760px 400px at 82% -10%,rgba(46,124,246,.1),transparent 62%),var(--bg2)}
+.dl .cta{display:flex;gap:16px;justify-content:center;margin-top:38px;flex-wrap:wrap;align-items:center}
+.dl .ver{font-family:var(--mono);font-size:12.5px;color:var(--dim);margin-top:24px}
+.soon{display:inline-flex;align-items:center;gap:10px;border:1.5px dashed rgba(23,43,77,.22);border-radius:999px;padding:14px 28px;color:var(--dim);font-size:14.5px;font-weight:600;background:#fff}
+.soon i{font-style:normal;font-size:10.5px;border:1px solid rgba(23,43,77,.25);border-radius:6px;padding:1px 9px;letter-spacing:.12em}
+
+footer{background:var(--bg2);border-top:1px solid rgba(23,43,77,.08);padding:44px 0;font-size:13.5px;color:var(--dim)}
+.foot-in{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.foot-in b{color:var(--ink)}
+.foot-in .en{font-family:var(--en);color:var(--green)}
+
+@media (max-width:960px){
+  .hero h1{font-size:44px}.fb-copy h2{font-size:30px}
+  .feature-block{grid-template-columns:1fr;gap:40px}.feature-block.rev .fb-media{order:0}
+  .grid{grid-template-columns:1fr 1fr}
+  .flow{grid-template-columns:1fr 1fr}.flowline::before{display:none}
+  .spec{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}
+  h2{font-size:32px}
+}
+@media (max-width:768px){
+  nav a.ln{display:none}
+  .nav-in{height:56px;gap:12px}
+}
+@media (max-width:640px){
+  .wrap{padding:0 20px}
+  section{padding:64px 0}
+  .hero{padding:60px 0 0}
+  .hero h1{font-size:33px;letter-spacing:0;margin-top:18px}
+  .hero .sub{font-size:16px;margin-top:14px}
+  .hero .cta{margin-top:26px;gap:10px}
+  .btn{padding:13px 24px;font-size:14px}
+  .hero-shot{margin-top:40px}
+  .mb-screen{border-width:8px;border-bottom-width:9px;border-radius:16px 16px 0 0}
+  .mb-base{height:11px;width:110%;margin-left:-5%}
+  .stats-bar{padding:44px 0 8px}
+  .stat{padding:22px 12px;border-radius:16px}
+  .stat b{font-size:30px}
+  .stat span{font-size:12.5px}
+  .sec-tag{font-size:11.5px;letter-spacing:.18em}
+  h2{font-size:28px}
+  .sec-sub{font-size:15.5px}
+  .fb-copy h2{font-size:26px}
+  .fb-copy p{font-size:15px}
+  .report-stage{padding:18px;border-radius:22px}
+  .glass-chip{padding:9px 13px;border-radius:13px}
+  .gc-1{top:14px;left:10px}
+  .gc-2{bottom:14px;right:10px}
+  .glass-chip b{font-size:11.5px}
+  .ckchip{font-size:10.5px;padding:3px 10px}
+  .moment-visual{padding:32px 20px;border-radius:22px;margin-top:40px}
+  .mv-flow{flex-direction:column;gap:14px}
+  .mv-node{min-width:0;width:100%}
+  .mv-circle{width:84px;height:84px}
+  .mv-arrow{transform:rotate(90deg);font-size:22px}
+  .mv-cap{font-size:13px;margin-top:22px}
+  .grid{grid-template-columns:1fr;gap:14px}
+  .gcard{padding:24px 20px;border-radius:18px;min-width:0}
+  .seg{max-width:100%;overflow-x:auto}
+  .seg span{padding:7px 12px;font-size:12px;white-space:nowrap}
+  .hash-big,.kbd-hint,.scard td:last-child{overflow-wrap:anywhere;word-break:break-word}
+  .flow{gap:28px}
+  .fstep .num{width:60px;height:60px;font-size:16px}
+  .fstep h3{margin-top:14px}
+  .rev-card{padding:26px 22px;border-radius:20px}
+  .rev-quote{font-size:15px}
+  .rev-ctl{gap:16px;margin-top:30px}
+  .rev-btn{width:42px;height:42px}
+  .spec{margin-top:36px}
+  .scard{padding:24px 20px}
+  .scard td{font-size:12.5px;padding:10px 2px}
+  .dl .cta{gap:12px}
+  .soon{padding:12px 20px;font-size:13px}
+  .ver{padding:0 12px;line-height:1.7}
+  footer{padding:34px 0;text-align:center}
+  .foot-in{flex-direction:column;justify-content:center}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="cc-tile" viewBox="0 0 512 512">
+    <rect width="512" height="512" rx="118" fill="#0A2540"/>
+    <g stroke="#2E7CF6" stroke-opacity=".55" stroke-width="16" fill="none" stroke-linecap="round">
+      <path d="M108 158v-30a20 20 0 0 1 20-20h30"/><path d="M404 158v-30a20 20 0 0 0-20-20h-30"/>
+      <path d="M108 354v30a20 20 0 0 0 20 20h30"/><path d="M404 354v30a20 20 0 0 1-20 20h-30"/>
+    </g>
+    <path d="M166 256 236 326" stroke="#2E7CF6" stroke-width="46" stroke-linecap="round" fill="none"/>
+    <path d="M236 326 354 178" stroke="#00C389" stroke-width="46" stroke-linecap="round" fill="none"/>
+  </symbol>
+</svg>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="nav-brand" href="#top">
+      <svg width="26" height="26"><use href="#cc-tile"/></svg>
+      可拷 <span class="en">CoCopy</span>
+    </a>
+    <a class="ln" href="#core">核心功能</a>
+    <a class="ln" href="#moment">双绿确认</a>
+    <a class="ln" href="#features">全部功能</a>
+    <a class="ln" href="#reviews">用户评价</a>
+    <a class="ln" href="#spec">技术规格</a>
+    <span class="nav-cta"><a class="btn btn-grad" style="padding:9px 22px;font-size:13.5px" href="#download">下载</a></span>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <h1 class="rv" style="--d:.08s">帧帧守护&nbsp;&nbsp;<span class="gt">格外可“拷”</span></h1>
+    <p class="sub rv" style="--d:.16s">可拷 CoCopy，为专业影像创作打造的拷卡备份与数据校验软件。<br>素材卡同时备份到多个盘，<b>拷贝即校验，完成即可靠。</b></p>
+    <div class="cta rv" style="--d:.24s">
+      <a class="btn btn-grad" href="#download">⌘ 免费下载 macOS 版</a>
+      <a class="btn btn-ghost" href="#core">进一步了解 ↓</a>
+    </div>
+    <div class="hero-shot rv" style="--d:.2s">
+      <div class="macbook">
+        <div class="mb-screen"><img src="img/app-ui.jpg" alt="Mac 上运行的可拷拷卡备份界面"></div>
+        <div class="mb-base"></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="stats-bar">
+  <div class="wrap stats">
+    <div class="stat rv"><b>1 → N</b><span>一张卡同时备份多个盘</span></div>
+    <div class="stat rv" style="--d:.08s"><b>3-5×</b><span>XXH3-128 校验快于 MD5</span></div>
+    <div class="stat rv" style="--d:.16s"><b>100%</b><span>写后即校验，不过不放行</span></div>
+    <div class="stat rv" style="--d:.24s"><b>0 联网</b><span>完全离线，素材零外流</span></div>
+  </div>
+</div>
+
+<section id="core" style="padding-top:70px">
+  <div class="wrap">
+    <div class="feature-block">
+      <div class="fb-copy rv">
+        <span class="sec-tag">COPY & VERIFY</span>
+        <h2>一次插卡，<br><span class="gt">多路落盘。</span></h2>
+        <p>素材卡同时备份到多个目的地——RAID、NAS、移动硬盘一起写。XXH3-128 逐文件哈希校验，速度约是 MD5 的 3-5 倍。校验不过，任务绝不标绿。</p>
+        <a class="lk" href="#features">查看全部功能 ›</a>
+      </div>
+      <div class="fb-media rv" style="--d:.12s">
+        <div class="report-stage">
+          <div class="report-frame">
+            <img src="img/app-backup.jpg" alt="可拷拷卡备份操作界面">
+          </div>
+          <div class="glass-chip gc-1"><span class="ckchip b">✓ 拷贝</span><span class="ckchip g">✓ 校验</span><b>双绿确认</b></div>
+          <div class="glass-chip gc-2"><span class="ckchip g">1814 个文件</span><b>10.9 GB · 00:00:35</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-block rev">
+      <div class="fb-copy rv">
+        <span class="sec-tag">REPORT CENTER</span>
+        <h2>每一次拷贝，<br><span class="gt">都有据可查。</span></h2>
+        <p>任务结束自动生成 PDF 拷卡报告：项目、卡名、文件数、哈希与时间线一目了然。报告中心按时间与状态筛选回溯——成功、校验异常、失败、已取消，清清楚楚，交付零扯皮。</p>
+        <a class="lk" href="#features">了解报告中心 ›</a>
+      </div>
+      <div class="fb-media rv" style="--d:.12s">
+        <div class="report-stage">
+          <div class="report-frame">
+            <img src="img/report-real.png" alt="可拷 PDF 拷卡报告实拍">
+          </div>
+          <div class="glass-chip gc-1"><span class="ckchip g">✓ 全部成功</span><b>1814 个文件 · 10.89 GB</b></div>
+          <div class="glass-chip gc-2"><span class="ckchip b">XXH3-128</span><b>22 秒完成拷贝与校验</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="moment" class="alt">
+  <div class="wrap">
+    <div class="center rv">
+      <span class="sec-tag">THE GREEN MOMENT</span>
+      <h2>影像创作者的<span class="gt">收工定心丸</span></h2>
+      <p class="sec-sub">拷贝 ✓，校验 ✓——两盏绿灯同时亮起的那一刻，素材卡才能被安全格式化。<br>这是可拷最重要的仪式。</p>
+    </div>
+    <div class="moment-visual rv" style="--d:.1s">
+      <div class="mv-flow">
+        <div class="mv-node">
+          <div class="mv-circle c1"><svg width="46" height="46" viewBox="0 0 512 512"><rect x="120" y="150" width="272" height="212" rx="34" fill="none" stroke="#2E7CF6" stroke-width="30"/><path d="M120 226h272" stroke="#2E7CF6" stroke-width="22"/><rect x="196" y="118" width="120" height="66" rx="16" fill="none" stroke="#2E7CF6" stroke-width="24"/></svg></div>
+          <div class="lab">素材卡 · 1814 个文件</div><div class="ok">10.9 GB</div>
+        </div>
+        <span class="mv-arrow mv-arrow-a">⟶</span>
+        <div class="mv-node">
+          <div class="mv-circle c2"><svg width="52" height="52" viewBox="0 0 512 512"><path class="ckdraw" d="M130 270 220 360 390 160" stroke="#2E7CF6" stroke-width="56" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+          <div class="lab">拷贝至全部目标</div><div class="ok">多路并行 · 自动重试</div>
+        </div>
+        <span class="mv-arrow mv-arrow-b">⟶</span>
+        <div class="mv-node">
+          <div class="mv-circle c3"><svg width="52" height="52" viewBox="0 0 512 512"><path class="ckdraw2" d="M130 270 220 360 390 160" stroke="#00C389" stroke-width="56" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+          <div class="lab">XXH3-128 校验</div><div class="ok">逐文件比对 · 3-5× MD5</div>
+        </div>
+      </div>
+      <div class="mv-cap">全部校验通过，可安全格式化素材卡。</div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="center rv">
+      <span class="sec-tag">FEATURES</span>
+      <h2>每一步，<span class="gt">都有据可查</span></h2>
+      <p class="sec-sub">把"数据安全"拆成看得见、听得到、可回溯的日常。</p>
+    </div>
+    <div class="grid">
+      <div class="gcard rv" style="--d:.05s">
+        <div class="ic">✓</div>
+        <h3>XXH3-128 哈希校验</h3>
+        <p>逐文件比对，兼容外部 MD5 工具交叉复核，校验失败精确定位到文件。</p>
+        <div class="g-visual">
+          <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="hash-big">A001_C012.mxf</span><span class="hash-big" style="color:var(--green)">82% · 2.1 GB/s</span></div>
+          <div class="prog-line"><i></i></div>
+          <div class="kbd-hint">xxHash-128 · 9F3A 77C2 04BE … 44C2 1B</div>
+        </div>
+      </div>
+      <div class="gcard rv" style="--d:.12s">
+        <div class="ic">⧉</div>
+        <h3>路径预设</h3>
+        <p>常用目标目录存为预设，下一张卡自动带出，一键套用。</p>
+        <div class="g-visual">
+          <span class="hash-big">📁 /Volumes/T9/DAILIES/</span>
+          <span class="hash-big">🗄 /RAID-A/项目归档/</span>
+          <div class="kbd-hint">一键套用 · 同时拷贝到全部预设</div>
+        </div>
+      </div>
+      <div class="gcard rv" style="--d:.19s">
+        <div class="ic">⚙</div>
+        <h3>备份策略</h3>
+        <p>目标文件已存在时，按你的规矩来；智能加速跳过同名同大小文件。</p>
+        <div class="g-visual" style="align-items:flex-start">
+          <div class="seg"><span>跳过</span><span class="on">创建副本</span><span>覆盖</span></div>
+          <div class="kbd-hint">智能加速：重复备份快人一步</div>
+        </div>
+      </div>
+      <div class="gcard rv" style="--d:.05s">
+        <div class="ic">♪</div>
+        <h3>现场级体验</h3>
+        <p>完成音效即时提醒，深浅主题跟随系统，DIT 车里颠簸也不乱。</p>
+        <div class="g-visual" style="align-items:flex-start">
+          <div class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="kbd-hint">♪ 拷贝完成提示音 · 主题：跟随系统</div>
+        </div>
+      </div>
+      <div class="gcard rv" style="--d:.12s">
+        <div class="ic">▤</div>
+        <h3>PDF 拷卡报告</h3>
+        <p>预览、导出、存档一步到位，交付与归档直接引用。</p>
+        <div class="g-visual" style="align-items:flex-start">
+          <div class="seg"><span class="on">预览</span><span>导出 PDF</span></div>
+          <div class="kbd-hint">项目 · 卡名 · 文件数 · 哈希 · 时间线</div>
+        </div>
+      </div>
+      <div class="gcard rv" style="--d:.19s">
+        <div class="ic">☰</div>
+        <h3>报告中心</h3>
+        <p>按今天 / 近 7 天 / 近 30 天与状态筛选，空格键快速预览。</p>
+        <div class="g-visual" style="align-items:flex-start">
+          <div class="seg"><span class="on">全部</span><span>今天</span><span>近 7 天</span><span>近 30 天</span></div>
+          <div class="kbd-hint">成功 · 校验异常 · 失败 · 已取消</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <div class="center rv">
+      <span class="sec-tag">WORKFLOW</span>
+      <h2>四步收工，<span class="gt">零悬案</span></h2>
+    </div>
+    <div class="flowline">
+      <div class="flow">
+        <div class="fstep rv"><div class="num"><span class="gt">01</span></div><h3>选择素材卡</h3><p>自动识别素材卡与外接盘，实时显示容量与剩余空间。</p></div>
+        <div class="fstep rv" style="--d:.1s"><div class="num"><span class="gt">02</span></div><h3>添加备份目标</h3><p>单卡同时拷贝到多个目的地，常用路径存为预设。</p></div>
+        <div class="fstep rv" style="--d:.2s"><div class="num"><span class="gt">03</span></div><h3>填写任务信息</h3><p>项目 / 卡 / 备注，不填则自动命名，报告照样清晰。</p></div>
+        <div class="fstep rv" style="--d:.3s"><div class="num"><span class="gt">04</span></div><h3>双绿确认收卡</h3><p>拷贝 ✓ 校验 ✓ 之后，才提示可安全格式化素材卡。</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="reviews" class="reviews">
+  <div class="wrap">
+    <div class="center rv">
+      <span class="sec-tag">TESTIMONIALS</span>
+      <h2>深受影像创作者<span class="gt">信赖</span></h2>
+      <p class="sec-sub">可拷刚刚上线，这些是首批内测用户发来的反馈与建议。</p>
+    </div>
+
+    <div class="rev-viewport rv" style="--d:.1s">
+      <div class="rev-track" id="revTrack">
+        <div class="rev-card">
+          <div class="rev-stars">★★★★★</div>
+          <div class="rev-quote">双绿灯亮起才能收卡，可拷把我们 DIT 的行规做成了软件。180GB 一张卡，一杯咖啡的功夫全部校验完毕，试了半个月没出过一次错。</div>
+          <div class="rev-user"><img src="img/avatar-1.png" alt="陈默头像"><div><b>陈默</b><span>DIT 数字中间员 · 剧组《长夜将尽》</span></div></div>
+        </div>
+        <div class="rev-card">
+          <div class="rev-stars">★★★★★</div>
+          <div class="rev-quote">听到完成音效、看到两盏绿灯，才是真正意义上的收工。小建议：希望加个"校验通过后自动弹出卡"的选项，就更省心了。</div>
+          <div class="rev-user"><img src="img/avatar-2.png" alt="林小舟头像"><div><b>林小舟</b><span>纪录片摄影师</span></div></div>
+        </div>
+        <div class="rev-card">
+          <div class="rev-stars">★★★★★</div>
+          <div class="rev-quote">交付时带上 PDF 拷卡报告，甲方再没问过"素材到底全不全"。建议：报告模板要是能加公司 Logo 就更完美了。</div>
+          <div class="rev-user"><img src="img/avatar-3.png" alt="赵一鸣的爱犬头像"><div><b>赵一鸣</b><span>后期主管 · 后期制作公司</span></div></div>
+        </div>
+        <div class="rev-card">
+          <div class="rev-stars">★★★★★</div>
+          <div class="rev-quote">一键三个盘同时备份，完成还有提示音，太适合我这种粗心的人。唯一的愿望：Windows 版快点来，工作室台式机也想用！</div>
+          <div class="rev-user"><img src="img/avatar-4.png" alt="苏晚的头像猫"><div><b>苏晚</b><span>自媒体创作者 · 全网 80 万粉丝</span></div></div>
+        </div>
+        <div class="rev-card">
+          <div class="rev-stars">★★★★★</div>
+          <div class="rev-quote">内测试用了一个多月，完全离线这点太重要了，客户素材一滴都不外流。建议：希望能支持按项目自动归类备份文件夹。</div>
+          <div class="rev-user"><img src="img/avatar-5.png" alt="老周头像"><div><b>老周</b><span>独立摄影师 · 商业拍摄</span></div></div>
+        </div>
+        <div class="rev-card">
+          <div class="rev-stars">★★★★★</div>
+          <div class="rev-quote">XXH3 校验比 MD5 快太多，DIT 车里能多出半小时喘息。小建议：多目标拷贝时，希望能显示每个目标的独立进度条。</div>
+          <div class="rev-user"><img src="img/avatar-6.png" alt="何雨桐头像"><div><b>何雨桐</b><span>特效制片 · 视效工作室</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rev-ctl rv" style="--d:.15s">
+      <button class="rev-btn" id="revPrev" aria-label="上一页">‹</button>
+      <div class="rev-dots" id="revDots"></div>
+      <button class="rev-btn" id="revNext" aria-label="下一页">›</button>
+    </div>
+  </div>
+</section>
+
+<section id="spec">
+  <div class="wrap">
+    <div class="center rv">
+      <span class="sec-tag">SPECS</span>
+      <h2>技术规格</h2>
+    </div>
+    <div class="spec">
+      <div class="scard rv" style="--d:.05s">
+        <h3>校验与完整性</h3>
+        <table>
+          <tr><td>校验算法</td><td>XXH3-128（默认）/ MD5 / 关闭</td></tr>
+          <tr><td>校验性能</td><td>≈ 3-5× MD5 速度</td></tr>
+          <tr><td>互操作性</td><td>外部 MD5 工具交叉比对</td></tr>
+          <tr><td>失败处理</td><td>标记异常 · 定位文件 · 重拷复核</td></tr>
+        </table>
+      </div>
+      <div class="scard rv" style="--d:.12s">
+        <h3>平台与数据</h3>
+        <table>
+          <tr><td>平台</td><td>macOS 14+ · Apple Silicon 原生</td></tr>
+          <tr><td>介质</td><td>SD / CFexpress / USB / 雷电 / NAS</td></tr>
+          <tr><td>报告</td><td>PDF 拷卡报告 · 报告中心归档</td></tr>
+          <tr><td>隐私</td><td>本地存储 · 完全离线 · 无遥测</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="download" class="dl">
+  <div class="wrap">
+    <div class="rv">
+      <span class="sec-tag">DOWNLOAD</span>
+      <h2>今晚收工前，<span class="gt">把它装上</span></h2>
+      <p class="sec-sub">个人使用免费。拷贝即校验，完成即可靠。</p>
+    </div>
+    <div class="cta rv" style="--d:.12s">
+      <a class="btn btn-grad" href="#" style="padding:17px 40px;font-size:16px">⌘ 下载 macOS 版</a>
+      <span class="soon">Windows 版 <i>规划中</i></span>
+    </div>
+    <div class="ver rv" style="--d:.2s">Apple Silicon (M1/M2/M3/M4) 原生 · macOS 14 Sonoma+ · 安装包哈希值随发布页提供</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div><b>帧帧守护&nbsp;&nbsp;格外可靠</b>&nbsp;&nbsp;<span class="en">Copy with Confidence</span></div>
+    <div>可拷 CoCopy © 2026 · v1.6.4 · macOS · Apple Silicon</div>
+  </div>
+</footer>
+
+<script>
+const io = new IntersectionObserver((es)=>{
+  es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+},{threshold:.15,rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+
+(function(){
+  const track = document.getElementById('revTrack');
+  const cards = track.children;
+  const dotsBox = document.getElementById('revDots');
+  const noMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let per = 3, page = 0, pages = 1, timer = null;
+
+  function layout(){
+    const w = window.innerWidth;
+    per = w <= 640 ? 1 : w <= 960 ? 2 : 3;
+    pages = Math.ceil(cards.length / per);
+    page = Math.min(page, pages - 1);
+    dotsBox.innerHTML = '';
+    for(let i=0;i<pages;i++){
+      const d = document.createElement('button');
+      d.className = 'dot' + (i===page?' on':'');
+      d.setAttribute('aria-label','第 '+(i+1)+' 页');
+      d.addEventListener('click',()=>{ go(i); restart(); });
+      dotsBox.appendChild(d);
+    }
+    apply();
+  }
+  function apply(){
+    const card = cards[0];
+    const gap = per === 1 ? 0 : 18;
+    const step = card.getBoundingClientRect().width + gap;
+    track.style.transform = 'translateX(' + (-page*per*step) + 'px)';
+    [...dotsBox.children].forEach((d,i)=>d.classList.toggle('on', i===page));
+  }
+  function go(p){ page = (p + pages) % pages; apply(); }
+  function restart(){ if(!noMotion){ clearInterval(timer); timer = setInterval(()=>go(page+1), 5000); } }
+
+  document.getElementById('revPrev').addEventListener('click',()=>{ go(page-1); restart(); });
+  document.getElementById('revNext').addEventListener('click',()=>{ go(page+1); restart(); });
+  track.addEventListener('mouseenter',()=>clearInterval(timer));
+  track.addEventListener('mouseleave',restart);
+  let sx = null;
+  track.addEventListener('touchstart',e=>{ sx = e.touches[0].clientX; clearInterval(timer); },{passive:true});
+  track.addEventListener('touchend',e=>{
+    if(sx===null) return;
+    const dx = e.changedTouches[0].clientX - sx;
+    if(Math.abs(dx) > 40) go(page + (dx < 0 ? 1 : -1));
+    sx = null; restart();
+  },{passive:true});
+
+  window.addEventListener('resize',layout);
+  layout();
+  restart();
+})();
+</script>
+</body>
+</html>
